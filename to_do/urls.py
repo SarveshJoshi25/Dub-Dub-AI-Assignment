@@ -13,5 +13,5 @@ urlpatterns = [
     path('task/edit/<str:task_id>/', views.taskEdit, name="taskEdit"),
 
     path('user/reset_password/', views.resetPassword, name="resetPassword"),
-    # path('user/verify_otp', views.verifyPassword, name='verifyPassword')
+    path('user/verify_otp/', views.verifyPassword, name='verifyPassword')
 ]

@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.decorators import api_view
 from email_validator import validate_email, EmailNotValidError
-from .models import User, Task
+from .models import User, Task, otp
 from django.contrib.auth.password_validation import validate_password, ValidationError
 import bcrypt
 from .threads import sendVerificationEmail
@@ -226,5 +226,42 @@ def resetPassword(request):
         return JsonResponse({"error": "User is not logged in."}, status=status.HTTP_406_NOT_ACCEPTABLE)
     except KeyError:
         return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
-    # except Exception as e:
-    #     return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+@api_view(["POST"])
+def verifyPassword(request):
+    try:
+        decoded_token = validate_token(request.COOKIES.get('JWT_TOKEN_FOR_OTP'))
+        if not decoded_token['requested']:
+            return JsonResponse({"error": "Invalid request for change the password"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        fetched_otp = otp.objects.filter(otp_for=User.objects.get(user_uuid=decoded_token['user_uuid']))
+
+        if fetched_otp.count() != 1:
+            return JsonResponse({"error": "Invalid request for change the password"},
+                                status=status.HTTP_406_NOT_ACCEPTABLE)
+
+        received_data = request.data
+
+        received_otp = str(received_data["otp"]).strip()
+        received_new_password = str(received_data["password"]).strip()
+
+        if not verify_password(hashed_password=fetched_otp[0].otp, received_password=received_otp):
+            return JsonResponse({"error": "OTP didn't match."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+        user = User.objects.filter(user_uuid=decoded_token['user_uuid'])
+        user.update(user_password=generate_new_password(received_new_password))
+
+        jsonResponse = JsonResponse({"message": "Request of change of password was successful."}, status=status.HTTP_200_OK)
+        jsonResponse.delete_cookie(key="JWT_TOKEN_FOR_OTP")
+        jsonResponse.set_cookie(key="JWT_TOKEN", value=generate_jwt_token(decoded_token['user_uuid']))
+        return jsonResponse
+
+    except jwt.exceptions.DecodeError:
+        return JsonResponse({"error": "User is not logged in."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except KeyError:
+        return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
