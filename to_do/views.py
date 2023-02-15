@@ -135,3 +135,22 @@ def taskFetch(request):
         return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
     except Exception as e:
         return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+@api_view(["PATCH"])
+def taskTick(request, task_id):
+    try:
+        received_token = request.COOKIES.get("JWT_TOKEN")
+        decoded_token = validate_token(received_token)
+        task = Task.objects.filter(
+            task_owner=User.objects.filter(user_uuid=str(decoded_token['user_uuid']))[0].user_uuid, task_uuid=task_id)
+        if task.count() < 1:
+            return JsonResponse({"error": "Task doesn't exists."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        task.update(task_is_completed=not task[0].task_is_completed)
+        return JsonResponse({"message": "Status updated successfully."}, status=status.HTTP_200_OK)
+    except jwt.exceptions.DecodeError:
+        return JsonResponse({"error": "User is not logged in."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except KeyError:
+        return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
