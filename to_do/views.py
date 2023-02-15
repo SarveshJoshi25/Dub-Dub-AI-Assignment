@@ -154,3 +154,42 @@ def taskTick(request, task_id):
         return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
     except Exception as e:
         return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+@api_view(["DELETE"])
+def taskDelete(request, task_id):
+    try:
+        received_token = request.COOKIES.get("JWT_TOKEN")
+        decoded_token = validate_token(received_token)
+        task = Task.objects.filter(task_owner=User.objects.filter(user_uuid=str(
+            decoded_token['user_uuid']))[0].user_uuid, task_uuid=task_id)
+        if task.count() < 1:
+            return JsonResponse({"error": "Task doesn't exists."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        task.delete()
+        return JsonResponse({"message": "Task deleted successfully!"}, status=status.HTTP_200_OK)
+    except jwt.exceptions.DecodeError:
+        return JsonResponse({"error": "User is not logged in."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except KeyError:
+        return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+@api_view(["PATCH"])
+def taskEdit(request, task_id):
+    try:
+        received_token = request.COOKIES.get("JWT_TOKEN")
+        decoded_token = validate_token(received_token)
+        task = Task.objects.filter(
+            task_owner=User.objects.filter(user_uuid=str(decoded_token['user_uuid']))[0].user_uuid, task_uuid=task_id)
+        if task.count() < 1:
+            return JsonResponse({"error": "Task doesn't exists."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        validate_task(received_data=request.data)
+        task.update(task_title=request.data['task_title'])
+        return JsonResponse({"message": "Task updated successfully."}, status=status.HTTP_200_OK)
+    except jwt.exceptions.DecodeError:
+        return JsonResponse({"error": "User is not logged in."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except KeyError:
+        return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
