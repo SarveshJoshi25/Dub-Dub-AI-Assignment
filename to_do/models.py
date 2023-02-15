@@ -2,7 +2,7 @@ from django.db import models
 import uuid
 
 
-# Create your models here.
+# These classes are models for database tables, There are three tables in this database.
 
 class User(models.Model):
     user_uuid = models.CharField(verbose_name="user_uuid", max_length=120, primary_key=True, null=False, editable=False,

@@ -11,35 +11,42 @@ from .threads import sendVerificationEmail
 from config import jwt_secret
 
 
+# This function starts thread, and this runs parallely with the API execution.
 def send_otp(user):
     sendVerificationEmail(user).start()
 
 
+# Decoding JWT token using Secret keys.
 def validate_token(received_token: str):
     return jwt.decode(received_token, jwt_secret, algorithms="HS256")
 
 
+# Task can be validated if Task title has length more than 0
 def validate_task(received_data: dict):
     return len(str(received_data['task_title'])) > 0
 
 
+# JWT Token is generated with this function.
 def generate_jwt_token(user_id: str) -> str:
     return jwt.encode({"user_uuid": user_id}, jwt_secret, algorithm="HS256")
 
 
+# JWT Token is generated for OTP generation format.
 def generate_jwt_token_for_otp(user_id: str) -> str:
     return jwt.encode({"user_uuid": user_id, "requested": True}, jwt_secret, algorithm="HS256")
 
 
+# Hashed Password and Received Password are verified.
 def verify_password(hashed_password: str, received_password: str) -> bool:
     return bcrypt.checkpw(received_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
-# Create your views here.
+# Password is hashed and then returned.
 def generate_new_password(user_password: str) -> str:
     return bcrypt.hashpw(password=user_password.encode('utf-8'), salt=bcrypt.gensalt()).decode('utf-8')
 
 
+# This function verifies if User Information entered by the User is validatable or not.
 def validate_user(fetched_data: dict) -> bool:
     try:
         user_email = str(fetched_data['email_address']).strip()
@@ -47,6 +54,7 @@ def validate_user(fetched_data: dict) -> bool:
 
         if User.objects.filter(user_email_address=user_email).count() > 0:
             raise Exception("User Email is already registered with another account.")
+        # Checks if Email Address is already registered.
 
         validate_email(email=user_email, check_deliverability=True, globally_deliverable=True)
         validate_password(password=user_password)
@@ -57,13 +65,25 @@ def validate_user(fetched_data: dict) -> bool:
         raise Exception("Invalid Password / Password not strong enough.")
 
 
+# Testing function, This is made for StatusCake.
 @api_view(["GET", "POST"])
 def isAwake(request):
     return JsonResponse({"message": "The API is working fine."}, status=status.HTTP_200_OK)
 
 
+# This API is for registering the user.
 @api_view(["POST"])
 def userRegister(request):
+    """
+    sample input: {
+        "email_address": "contact.sarveshjoshi@gmail.com",
+        "password": "YourPassword"
+    }
+
+    :param request:
+    :return: Response with Status 201: for successful creation of user.
+             Response with status 406: for errros.
+    """
     try:
         received_data = request.data
 
@@ -72,6 +92,7 @@ def userRegister(request):
         user_id = str(uuid.uuid4())
         User(user_uuid=user_id, user_email_address=str(received_data['email_address']).strip(),
              user_password=generate_new_password(str(received_data['password']).strip())).save()
+        # User details will be saved in the User table.
 
         jsonResponse = JsonResponse({"message": "Account created successfully!"}, status=status.HTTP_201_CREATED)
         jsonResponse.set_cookie(key="JWT_TOKEN", value=generate_jwt_token(user_id))
@@ -85,6 +106,16 @@ def userRegister(request):
 @api_view(["POST"])
 def userLogin(request):
     try:
+        """
+            sample input: {
+                "email_address": "contact.sarveshjoshi@gmail.com",
+                "password": "YourPassword"
+            }
+
+            :param request:
+            :return: Response with Status 200: for successful creation of log in.
+                     Response with status 406: for errros.
+            """
         received_data = request.data
 
         fetchedUser = User.objects.filter(user_email_address=str(received_data['email_address']).strip()).values(
@@ -108,6 +139,17 @@ def userLogin(request):
 
 @api_view(["POST"])
 def taskCreate(request):
+    """
+    User has to be logged in for creating task.
+
+    sample input: {
+        "task_title": "Any Task :)"
+    }
+
+    :param request:
+    :return: Response with Status 201: for successful creation of task.
+             Response with status 406: for errros.
+    """
     try:
         received_token = request.COOKIES.get("JWT_TOKEN")
         decoded_token = validate_token(received_token)
@@ -130,6 +172,12 @@ def taskCreate(request):
 
 @api_view(["GET"])
 def taskFetch(request):
+    """
+    All tasks of the user are returned.
+
+    :param request:
+    :return: All tasks of particular user.
+    """
     try:
         received_token = request.COOKIES.get("JWT_TOKEN")
         decoded_token = validate_token(received_token)
@@ -148,6 +196,13 @@ def taskFetch(request):
 
 @api_view(["PATCH"])
 def taskTick(request, task_id):
+    """
+    This API route is used to tick or untick a task.
+    :param request:
+    :param task_id:
+    :return: Response with Status 200: for successful ticking of task.
+             Response with status 406: for errros.
+    """
     try:
         received_token = request.COOKIES.get("JWT_TOKEN")
         decoded_token = validate_token(received_token)
@@ -167,6 +222,14 @@ def taskTick(request, task_id):
 
 @api_view(["DELETE"])
 def taskDelete(request, task_id):
+    """
+    This API route is used to delete a task.
+
+    :param request:
+    :param task_id:
+    :return: Response with Status 200: for successful deletion of task.
+             Response with status 406: for errros.
+    """
     try:
         received_token = request.COOKIES.get("JWT_TOKEN")
         decoded_token = validate_token(received_token)
@@ -186,6 +249,17 @@ def taskDelete(request, task_id):
 
 @api_view(["PATCH"])
 def taskEdit(request, task_id):
+    """
+      This API route is used to edit a task.
+      Sample Input: {
+        "task_title": "Edited task"
+      }
+
+    :param request:
+    :param task_id:
+    :return: Response with Status 200: for successful edition of task.
+             Response with status 406: for errros.
+    """
     try:
         received_token = request.COOKIES.get("JWT_TOKEN")
         decoded_token = validate_token(received_token)
@@ -206,6 +280,19 @@ def taskEdit(request, task_id):
 
 @api_view(["POST"])
 def resetPassword(request):
+    """
+    This API is used to reset password (Forgot Password).
+
+    Sample Input : {
+        "email_address": "contact.sarveshjoshi@gmail.com"
+    }
+
+    :param request:
+    :return: Response with Status 200: for successful sending of otp.
+             Response with status 406: for errros.\
+
+    Password will be sent to your email address.
+    """
     try:
         received_data = request.data
         user_email = str(received_data["email_address"]).strip()
@@ -232,10 +319,22 @@ def resetPassword(request):
 
 @api_view(["POST"])
 def verifyPassword(request):
+    """
+    This API is used to reset a password.
+
+    Sample Input: {
+        "otp" : "123456",
+        "password": "NewPassword"
+    }
+    :param request:
+    :return: Response with Status 200: for successful reset of password.
+             Response with status 406: for erros
+    """
     try:
         decoded_token = validate_token(request.COOKIES.get('JWT_TOKEN_FOR_OTP'))
         if not decoded_token['requested']:
-            return JsonResponse({"error": "Invalid request for change the password"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            return JsonResponse({"error": "Invalid request for change the password"},
+                                status=status.HTTP_406_NOT_ACCEPTABLE)
         fetched_otp = otp.objects.filter(otp_for=User.objects.get(user_uuid=decoded_token['user_uuid']))
 
         if fetched_otp.count() != 1:
@@ -253,7 +352,8 @@ def verifyPassword(request):
         user = User.objects.filter(user_uuid=decoded_token['user_uuid'])
         user.update(user_password=generate_new_password(received_new_password))
 
-        jsonResponse = JsonResponse({"message": "Request of change of password was successful."}, status=status.HTTP_200_OK)
+        jsonResponse = JsonResponse({"message": "Request of change of password was successful."},
+                                    status=status.HTTP_200_OK)
         jsonResponse.delete_cookie(key="JWT_TOKEN_FOR_OTP")
         jsonResponse.set_cookie(key="JWT_TOKEN", value=generate_jwt_token(decoded_token['user_uuid']))
         return jsonResponse
@@ -264,4 +364,3 @@ def verifyPassword(request):
         return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
     except Exception as e:
         return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
-
