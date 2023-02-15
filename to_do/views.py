@@ -4,10 +4,18 @@ from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.decorators import api_view
 from email_validator import validate_email, EmailNotValidError
-from .models import User
+from .models import User, Task
 from django.contrib.auth.password_validation import validate_password, ValidationError
 import bcrypt
 from config import jwt_secret
+
+
+def validate_token(received_token: str):
+    return jwt.decode(received_token, jwt_secret, algorithms="HS256")
+
+
+def validate_task(received_data: dict):
+    return len(str(received_data['task_title'])) > 0
 
 
 def generate_jwt_token(user_id: str) -> str:
@@ -87,3 +95,21 @@ def userLogin(request):
         return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
     except Exception as e:
         return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+@api_view(["POST"])
+def taskCreate(request):
+    try:
+        received_token = request.COOKIES.get("JWT_TOKEN")
+        decoded_token = validate_token(received_token)
+        if User.objects.filter(user_uuid=str(decoded_token['user_uuid'])).count() < 1:
+            return JsonResponse({"error": "Invalid User."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+        received_data = request.data
+        validate_task(received_data)
+
+        Task(task_uuid=str(uuid.uuid4()), task_title=received_data['task_title'], task_owner=User.objects.get
+        (user_uuid=str(decoded_token['user_uuid']))).save()
+        return JsonResponse({"message": "Task created successfully."}, status=status.HTTP_201_CREATED)
+    except jwt.exceptions.DecodeError:
+        return JsonResponse({"error": "User is not logged in."}, status=status.HTTP_406_NOT_ACCEPTABLE)
