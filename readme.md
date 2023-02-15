@@ -7,7 +7,7 @@ This application was created for evaluation for DubDub.ai's Internship procedure
 ### User Routes
 1. User Register `` POST ``
 
-U͟R͟L͟: ``` user/register/ ```
+U͟R͟L͟: ``` https://to-do-app-qtoh.onrender.com/api/v1/user/register/ ```
 
 L͟o͟g͟i͟n͟ r͟e͟q͟u͟i͟r͟e͟d͟: False
 
@@ -26,7 +26,7 @@ Response with status 406: for errors.
 
 2. User Login `` POST ``
 
-U͟R͟L͟: ``` user/login/ ```
+U͟R͟L͟: ``` https://to-do-app-qtoh.onrender.com/api/v1/user/login/ ```
 
 L͟o͟g͟i͟n͟ r͟e͟q͟u͟i͟r͟e͟d͟: False
 
@@ -47,7 +47,7 @@ Response with status 406: for errors.
 
 1. Create a Task `` POST ``
  
-U͟R͟L͟: ``` task/create/ ```
+U͟R͟L͟: ``` https://to-do-app-qtoh.onrender.com/api/v1/task/create/ ```
 
 L͟o͟g͟i͟n͟ r͟e͟q͟u͟i͟r͟e͟d͟: True
 
@@ -65,7 +65,7 @@ Response with status 406: for errors.
 
 2. Fetch a Task `` GET ``
 
-U͟R͟L͟: ``` task/fetch/ ```
+U͟R͟L͟: ``` https://to-do-app-qtoh.onrender.com/api/v1/task/fetch/ ```
 
 L͟o͟g͟i͟n͟ r͟e͟q͟u͟i͟r͟e͟d͟: True
 
@@ -77,7 +77,7 @@ Response with status 406: for errors.
 
 3. Tick a Task `` PATCH ``
  
-U͟R͟L͟: ``` task/tick/<task_id>/ ``` 
+U͟R͟L͟: ``` https://to-do-app-qtoh.onrender.com/api/v1/task/tick/<task_id>/ ``` 
 
 L͟o͟g͟i͟n͟ r͟e͟q͟u͟i͟r͟e͟d͟: True
 
@@ -89,7 +89,7 @@ Response with status 406: for errors.
 
 4. Delete a Task `` DELETE``
  
-U͟R͟L͟: ``` task/delete/<task_id>/ ```
+U͟R͟L͟: ``` https://to-do-app-qtoh.onrender.com/api/v1/task/delete/<task_id>/ ```
 
 L͟o͟g͟i͟n͟ r͟e͟q͟u͟i͟r͟e͟d͟: True
 
@@ -101,7 +101,7 @@ Response with status 406: for errors.
 
 5. Edit a Task `` PATCH ``
  
-U͟R͟L͟: ``` task/edit/<task_id>/ ```
+U͟R͟L͟: ``` https://to-do-app-qtoh.onrender.com/api/v1/task/edit/<task_id>/ ```
  
 L͟o͟g͟i͟n͟ r͟e͟q͟u͟i͟r͟e͟d͟: True
 
@@ -123,7 +123,7 @@ Response with status 406: for errors.
 
 1. Request to reset password `` POST ``
  
-U͟R͟L͟: ``` user/reset_password/ ```
+U͟R͟L͟: ``` https://to-do-app-qtoh.onrender.com/api/v1/user/reset_password/ ```
 
 L͟o͟g͟i͟n͟ r͟e͟q͟u͟i͟r͟e͟d͟: False
 
@@ -143,7 +143,7 @@ Response with status 406: for errors.
 
 2. Set new password `` POST ``
  
-U͟R͟L͟: ``` user/verify_otp/ ```
+U͟R͟L͟: ``` https://to-do-app-qtoh.onrender.com/api/v1/user/verify_otp/ ```
 
 L͟o͟g͟i͟n͟ r͟e͟q͟u͟i͟r͟e͟d͟: False
 
