@@ -16,3 +16,8 @@ class Task(models.Model):
     task_title = models.CharField(verbose_name="task_title", max_length=120, null=False)
     task_is_completed = models.BooleanField(verbose_name="task_is_completed", default=False)
     task_owner = models.ForeignKey("User", verbose_name="task_owner", on_delete=models.CASCADE)
+
+
+class otp(models.Model):
+    otp = models.CharField(verbose_name="otp", max_length=120, null=False, editable=False)
+    otp_for = models.ForeignKey("User", verbose_name="task_owner", on_delete=models.CASCADE)

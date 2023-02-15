@@ -7,7 +7,12 @@ from email_validator import validate_email, EmailNotValidError
 from .models import User, Task
 from django.contrib.auth.password_validation import validate_password, ValidationError
 import bcrypt
+from .threads import sendVerificationEmail
 from config import jwt_secret
+
+
+def send_otp(user):
+    sendVerificationEmail(user).start()
 
 
 def validate_token(received_token: str):
@@ -20,6 +25,10 @@ def validate_task(received_data: dict):
 
 def generate_jwt_token(user_id: str) -> str:
     return jwt.encode({"user_uuid": user_id}, jwt_secret, algorithm="HS256")
+
+
+def generate_jwt_token_for_otp(user_id: str) -> str:
+    return jwt.encode({"user_uuid": user_id, "requested": True}, jwt_secret, algorithm="HS256")
 
 
 def verify_password(hashed_password: str, received_password: str) -> bool:
@@ -193,3 +202,29 @@ def taskEdit(request, task_id):
         return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
     except Exception as e:
         return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+@api_view(["POST"])
+def resetPassword(request):
+    try:
+        received_data = request.data
+        user_email = str(received_data["email_address"]).strip()
+        user = User.objects.filter(user_email_address=user_email).values()
+
+        if user.count() != 1:
+            return JsonResponse({"error": "Invalid request of Reset Password : User doesn't exists."},
+                                status=status.HTTP_406_NOT_ACCEPTABLE)
+        user_object = {"user_email_address": user[0]['user_email_address'], "user_uuid": user[0]['user_uuid']}
+        send_otp(user_object)
+
+        jsonResponse = JsonResponse({"message": "OTP was sent successfully!"}, status=status.HTTP_200_OK)
+
+        jsonResponse.set_cookie(key="JWT_TOKEN_FOR_OTP", value=generate_jwt_token_for_otp(user[0]['user_uuid']))
+
+        return jsonResponse
+    except jwt.exceptions.DecodeError:
+        return JsonResponse({"error": "User is not logged in."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except KeyError:
+        return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    # except Exception as e:
+    #     return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
