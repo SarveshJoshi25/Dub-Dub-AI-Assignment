@@ -14,6 +14,10 @@ def generate_jwt_token(user_id: str) -> str:
     return jwt.encode({"user_uuid": user_id}, jwt_secret, algorithm="HS256")
 
 
+def verify_password(hashed_password: str, received_password: str) -> bool:
+    return bcrypt.checkpw(received_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+
 # Create your views here.
 def generate_new_password(user_password: str) -> str:
     return bcrypt.hashpw(password=user_password.encode('utf-8'), salt=bcrypt.gensalt()).decode('utf-8')
@@ -54,6 +58,30 @@ def userRegister(request):
 
         jsonResponse = JsonResponse({"message": "Account created successfully!"}, status=status.HTTP_201_CREATED)
         jsonResponse.set_cookie(key="JWT_TOKEN", value=generate_jwt_token(user_id))
+        return jsonResponse
+    except KeyError:
+        return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+@api_view(["POST"])
+def userLogin(request):
+    try:
+        received_data = request.data
+
+        fetchedUser = User.objects.filter(user_email_address=str(received_data['email_address']).strip()).values(
+            'user_uuid', 'user_password')
+
+        if fetchedUser.count() != 1:
+            return JsonResponse({"error": "Email address is not registered."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+        if not verify_password(fetchedUser[0]['user_password'], str(received_data['password']).strip()):
+            return JsonResponse({"error": "Email address and Password didn't match."},
+                                status=status.HTTP_406_NOT_ACCEPTABLE)
+
+        jsonResponse = JsonResponse({"message": "User logged in successfully!"}, status=status.HTTP_200_OK)
+        jsonResponse.set_cookie(key="JWT_TOKEN", value=generate_jwt_token(fetchedUser[0]["user_uuid"]))
         return jsonResponse
     except KeyError:
         return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
