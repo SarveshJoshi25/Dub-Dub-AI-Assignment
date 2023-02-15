@@ -113,3 +113,25 @@ def taskCreate(request):
         return JsonResponse({"message": "Task created successfully."}, status=status.HTTP_201_CREATED)
     except jwt.exceptions.DecodeError:
         return JsonResponse({"error": "User is not logged in."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except KeyError:
+        return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+@api_view(["GET"])
+def taskFetch(request):
+    try:
+        received_token = request.COOKIES.get("JWT_TOKEN")
+        decoded_token = validate_token(received_token)
+        user = User.objects.filter(user_uuid=str(decoded_token['user_uuid']))
+        if user.count() < 1:
+            return JsonResponse({"error": "Invalid User."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        fetched_tasks = Task.objects.filter(task_owner=user[0].user_uuid).values()
+        return JsonResponse({"tasks": list(fetched_tasks)}, status=status.HTTP_200_OK)
+    except jwt.exceptions.DecodeError:
+        return JsonResponse({"error": "User is not logged in."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except KeyError:
+        return JsonResponse({"error": "Required fields were not found."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+    except Exception as e:
+        return JsonResponse({"errors": e.args}, status=status.HTTP_406_NOT_ACCEPTABLE)
